@@ -25,13 +25,15 @@ neighbors = sys.argv[3:]
 
 
 
-
+# Actual BGP server module. Handles TCP receiving data
 def server_bgp(threadName, conn, addr):
     while True:
         data = conn.recv(1024)
-        print "Received: %s" %(data)
+        if data[:3] == "REQ":
+            print "Received: %s" %(data)
     conn.close()
 
+# TCP Listening module. When connecting, it makes another thread and pass the connection to server_bgp() function
 def server_listen(threadName):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host = ''
@@ -40,6 +42,7 @@ def server_listen(threadName):
     while True:
         conn, addr = s.accept()
         print 'Connected from %s' % str(addr)
+        # Makes another thread that actually handles the BGP data receiving
         try:
             thread.start_new_thread( server_bgp, ("Thread-SV-BGP", conn, addr) )
         except:
@@ -48,6 +51,7 @@ def server_listen(threadName):
 
     s.close()                # Close the connection
 
+# BGP client module. It connects to the neighbor's IP.
 def client_bgp(threadName, neighbor):
     cs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print "Connecting to %s..." % neighbor
@@ -57,6 +61,7 @@ def client_bgp(threadName, neighbor):
         time.sleep(INTERVAL)
     cs.close()
 
+# For the testing for now. It sends its AS number and its network(not real IP. for simulation)
 def makePacketTest():
     return "REQ|AS%s|%s" % (autoSys, thisNet)
 
@@ -82,6 +87,7 @@ except:
 print "Waiting 10 sec for starting other nodes..."
 time.sleep(10)
 
+# Connecting to all neighbors
 for neighbor in neighbors:
     try:
         thread.start_new_thread( client_bgp, ("Thread-CL-BGP", neighbor) )
@@ -92,3 +98,4 @@ for neighbor in neighbors:
 while (True):
     #Do Nothing here just waiting because child threads are doing everything...
     time.sleep(1)
+# We might handle some command to print routing table or
