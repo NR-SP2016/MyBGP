@@ -91,7 +91,9 @@ def server_bgp(threadName, conn, addr):
         except socket.error, e:
             print "Socket Error: %s" % str(e)
         #d("Received: %s" % ByteToHex(buf))
-        recved = len(buf)
+        recved = 0
+        if(buf is not None):
+            recved = len(buf)
         if(recved > 15):
             (dataType, network, subnet, pathVector) = MyPacket.decode(buf)
             if dataType == KEY_TYPE_REQUEST:
