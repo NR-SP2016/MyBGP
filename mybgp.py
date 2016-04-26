@@ -91,7 +91,7 @@ def server_bgp(threadName, conn, addr):
         if(recved > 15):
             (dataType, network, subnet, pathVector) = MyPacket.decode(buf)
             if dataType == KEY_TYPE_REQUEST:
-                neighbor = findNeighborByIp(network)
+                neighbor = findNeighborByIp(str(addr))
                 if neighbor is None:
                     neighbors.append({"ip" : network, "age": AGE_LIFE, "socket": conn})
                 else:
@@ -125,9 +125,7 @@ def server_bgp(threadName, conn, addr):
                 #Now we need to add this AS first line and send it to other neighbors
                 pathVector.insert(0, autoSys)
                 for neighbor in neighbors:
-                    if(neighbor["ip"] == network):
-                        continue
-                    if(neighbor["ip"] == thisNet):
+                    if(neighbor["ip"] == str(addr)):
                         continue
                     s = neighbor["socket"]
                     pkt = MyPacket.encode(KEY_TYPE_REQUEST, network, subnet, pathVector)
@@ -180,7 +178,7 @@ def displayRoutingTable():
     for route in routingTable:
         print "%s\t%s\t%s\t%s\t%s" % (route["network"], route["subnet"], route["AS"], route["neighbor"], route["forward"])
 
-def aging_thread():
+def aging_thread(threadName):
     while True:
         time.sleep(INTERVAL)
         aging()
@@ -234,7 +232,7 @@ for neighbor in neighbors:
         print "Error: unable to start client thread"
 
 try:
-    thread.start_new_thread( aging_thread )
+    thread.start_new_thread( aging_thread, ("Thread-Aging", ) )
 except:
     print "Error: unable to start aging thread"
 
