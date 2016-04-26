@@ -18,11 +18,12 @@ INTERVAL = 30
 
 
 #Global variables
-routingTable = []		# Routing Table!! You might want to save all ip address and AS number mappings
-
+routingTable = []		# Routing Table!! You might want to save all ip address and AS number mappings here
+neighbors = []
 
 
 KEY_TYPE_REQUEST = 1
+AGE_LIFE = 10
 BUFFER_SIZE = 1024
 DEBUG = True
 
@@ -90,45 +91,108 @@ def server_bgp(threadName, conn, addr):
         if(recved > 15):
             (dataType, network, subnet, pathVector) = MyPacket.decode(buf)
             if dataType == KEY_TYPE_REQUEST:
+                neighbor = findNeighborByIp(network)
+                if neighbor is None:
+                    neighbors.append({"ip" : network, "age": AGE_LIFE, "socket": conn})
+                else:
+                    neighbor["age"] = AGE_LIFE
                 if determineLoop(pathVector):
                     d("Loop detected. Ignoring...")
                     continue
                 print "Received: net:%s sub:%s path:%s" %(network, subnet, pathVector)
+
+                # Update Routing Table!
+                forward = ""
+                if(pathVector[0] == pathVector[-1]):
+                    forward = "Direct"
+                else:
+                    forward = "Routed"
+                routingRow = {"network":network, "AS":pathVector[-1], "neighbor": pathVector[0], "forward": forward}
+                if(len(routingTable) == 0):
+                    routingTable.append(routingRow)
+                else:
+                    newcomer = True
+                    for route in routingTable:
+                        if(route["network"] = network):
+                            route.update(routingRow)
+                            newcomer = False
+                    if(newcomer):
+                    routingTable.append(routingRow)
+
+                # Finished! Displaying Routing Table
+                displayRoutingTable()
+
+                #Now we need to add this AS first line and send it to other neighbors
+                pathVector.insert(0, autoSys)
+                for neighbor in neighbors:
+                    if(neighbor["ip"] == network):
+                        continue
+                    if(neighbor["ip"] == thisNet):
+                        continue
+                    s = neighbor["socket"]
+                    pkt = MyPacket.encode(KEY_TYPE_REQUEST, network, subnet, pathVector)
+                    s.send(pkt)
         if(recved == 0):
             break
     conn.close()
 
 # TCP Listening module. When connecting, it makes another thread and pass the connection to server_bgp() function
 def server_listen(threadName):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ss = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host = ''
-    s.bind((host, PORT_NUM))        # Bind to the port
-    s.listen(10)                 # Now wait for client connection.
+    ss.bind((host, PORT_NUM))        # Bind to the port
+    ss.listen(10)                 # Now wait for client connection.
     while True:
-        conn, addr = s.accept()
+        conn, addr = ss.accept()
         print 'Connected from %s' % str(addr)
         # Makes another thread that actually handles the BGP data receiving
         try:
             thread.start_new_thread( server_bgp, ("Thread-SV-BGP", conn, addr) )
         except:
             print "Error: unable to start server thread"
-    s.close()                # Close the connection
+    ss.close()                # Close the connection
 
 # BGP client module. It connects to the neighbor's IP.
 def client_bgp(threadName, neighbor):
     cs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    d("Connecting to %s..." % neighbor)
-    cs.connect((neighbor, PORT_NUM))
-    d("Connected to : %s" % neighbor)
+    d("Connecting to %s..." % neighbor["ip"])
+    cs.connect((neighbor["ip"], PORT_NUM))
+    d("Connected to : %s" % neighbor["ip"])
+    neighbor["socket"] = cs
     while(True):
         pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
-        d("sending:" + ByteToHex(pkt))
+        #d("sending:" + ByteToHex(pkt))
         cs.send(pkt)
         time.sleep(INTERVAL)
     cs.close()
 
 def determineLoop(pathVector):
     return autoSys in pathVector
+
+def findNeighborByIp(ipAddress):
+    for neighbor in neighbors:
+        if neighbor["ip"] == ipAddress:
+            return neighbor
+    return None
+
+def displayRoutingTable():
+    print "network\tAS\tneighbor\tforwardTo"
+    for route in routingTable:
+        print "%s\t%s\t%s\t%s" % (route["network"], route["AS"], route["neighbor"], route["forward"])
+
+def aging_thread():
+    while True:
+        time.sleep(INTERVAL)
+        aging()
+def aging():
+    tobeDeleted = []
+    for neighbor in neighbors:
+        neighbor["age"] -= 1
+        if(neighbor["age"] <= 0):
+            tobeDeleted.append(neighbor)
+            neighbor["socket"].close()
+    for neighbor in tobeDeleted:
+        neighbors.remove(neighbor)
 
 # For the testing for now. It sends its AS number and its network(not real IP. for simulation)
 def makePacketTest():
@@ -146,7 +210,10 @@ if(len(sys.argv) <4):
 autoSys = int(sys.argv[1])
 thisNet = sys.argv[2]
 thisSub = sys.argv[3]
-neighbors = sys.argv[4:]
+
+for neighbor in sys.argv[4:]
+    neighbors.append({"ip": neighbor, "age": AGE_LIFE})
+
 # Starting Server Listening Thread
 
 print "Starting Server Thread..."
@@ -166,6 +233,10 @@ for neighbor in neighbors:
     except:
         print "Error: unable to start client thread"
 
+try:
+    thread.start_new_thread( aging_thread )
+except:
+    print "Error: unable to start aging thread"
 
 while (True):
     #Do Nothing here just waiting because child threads are doing everything...
