@@ -95,7 +95,7 @@ def server_bgp(threadName, conn, addr):
                 if neighbor is None:
                     neighbors.append({"ip" : network, "age": AGE_LIFE, "socket": conn})
                 else:
-                    neighbor["age"] = AGE_LIFE
+                    neighbor.update({"age" : AGE_LIFE})
                 if determineLoop(pathVector):
                     d("Loop detected. Ignoring...")
                     continue
@@ -107,17 +107,17 @@ def server_bgp(threadName, conn, addr):
                     forward = "Direct"
                 else:
                     forward = "Routed"
-                routingRow = {"network":network, "AS":pathVector[-1], "neighbor": pathVector[0], "forward": forward}
+                routingRow = {"network":network, "subnet":subnet, "AS":pathVector[-1], "neighbor": pathVector[0], "forward": forward}
                 if(len(routingTable) == 0):
                     routingTable.append(routingRow)
                 else:
                     newcomer = True
                     for route in routingTable:
-                        if(route["network"] = network):
+                        if(route["network"] == network):
                             route.update(routingRow)
                             newcomer = False
                     if(newcomer):
-                    routingTable.append(routingRow)
+                        routingTable.append(routingRow)
 
                 # Finished! Displaying Routing Table
                 displayRoutingTable()
@@ -158,7 +158,7 @@ def client_bgp(threadName, neighbor):
     d("Connecting to %s..." % neighbor["ip"])
     cs.connect((neighbor["ip"], PORT_NUM))
     d("Connected to : %s" % neighbor["ip"])
-    neighbor["socket"] = cs
+    neighbor.update({"socket": cs})
     while(True):
         pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
         #d("sending:" + ByteToHex(pkt))
@@ -176,9 +176,9 @@ def findNeighborByIp(ipAddress):
     return None
 
 def displayRoutingTable():
-    print "network\tAS\tneighbor\tforwardTo"
+    print "network\t\tsubnet\t\tAS\tneighbor\tforwardTo"
     for route in routingTable:
-        print "%s\t%s\t%s\t%s" % (route["network"], route["AS"], route["neighbor"], route["forward"])
+        print "%s\t%s\t%s\t%s\t%s" % (route["network"], route["subnet"], route["AS"], route["neighbor"], route["forward"])
 
 def aging_thread():
     while True:
@@ -211,7 +211,7 @@ autoSys = int(sys.argv[1])
 thisNet = sys.argv[2]
 thisSub = sys.argv[3]
 
-for neighbor in sys.argv[4:]
+for neighbor in sys.argv[4:]:
     neighbors.append({"ip": neighbor, "age": AGE_LIFE})
 
 # Starting Server Listening Thread
