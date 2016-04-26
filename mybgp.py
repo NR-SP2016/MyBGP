@@ -85,7 +85,11 @@ def server_bgp(threadName, conn, addr):
     while True:
         #buf = bytearray(BUFFER_SIZE)
         #recved = conn.recv_into(buf, BUFFER_SIZE)
-        buf = conn.recv(BUFFER_SIZE)
+        buf = None
+        try:
+            buf = conn.recv(BUFFER_SIZE)
+        except socket.error, e:
+            print "Socket Error: %s" % str(e)
         #d("Received: %s" % ByteToHex(buf))
         recved = len(buf)
         if(recved > 15):
@@ -127,9 +131,10 @@ def server_bgp(threadName, conn, addr):
                 for neighbor in neighbors:
                     if(neighbor["ip"] == addr[0]):
                         continue
-                    s = neighbor["socket"]
-                    pkt = MyPacket.encode(KEY_TYPE_REQUEST, network, subnet, pathVector)
-                    s.send(pkt)
+                    if "socket" in neighbor:
+                        s = neighbor["socket"]
+                        pkt = MyPacket.encode(KEY_TYPE_REQUEST, network, subnet, pathVector)
+                        s.send(pkt)
         if(recved == 0):
             break
     conn.close()
@@ -154,14 +159,17 @@ def server_listen(threadName):
 def client_bgp(threadName, neighbor):
     cs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     d("Connecting to %s..." % neighbor["ip"])
-    cs.connect((neighbor["ip"], PORT_NUM))
-    d("Connected to : %s" % neighbor["ip"])
-    neighbor.update({"socket": cs})
-    while(True):
-        pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
-        #d("sending:" + ByteToHex(pkt))
-        cs.send(pkt)
-        time.sleep(INTERVAL)
+    try:
+        cs.connect((neighbor["ip"], PORT_NUM))
+        d("Connected to : %s" % neighbor["ip"])
+        neighbor.update({"socket": cs})
+        while(True):
+            pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
+            #d("sending:" + ByteToHex(pkt))
+            cs.send(pkt)
+            time.sleep(INTERVAL)
+    except socket.error, e:
+        print "Socket Error: %s" % str(e)
     cs.close()
 
 def determineLoop(pathVector):
@@ -212,6 +220,9 @@ thisSub = sys.argv[3]
 for neighbor in sys.argv[4:]:
     neighbors.append({"ip": neighbor, "age": AGE_LIFE})
 
+# Append routing table for myself
+routingRow = {"network":thisNet, "subnet":thisSub, "AS":autoSys, "neighbor": autoSys, "forward": "Direct"}
+routingTable.append(routingRow)
 # Starting Server Listening Thread
 
 print "Starting Server Thread..."
