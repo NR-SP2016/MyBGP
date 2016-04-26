@@ -23,13 +23,15 @@ routingTable = []		# Routing Table!! You might want to save all ip address and A
 
 
 KEY_TYPE_REQUEST = 1
+BUFFER_SIZE = 1024
 
 # Actual BGP server module. Handles TCP receiving data
 def server_bgp(threadName, conn, addr):
     while True:
-        data = conn.recv(1024)
-        print "Received: " + data.encode("hex")
-        if(len(data) > 13):
+        buf = bytearray(BUFFER_SIZE)
+        recved = conn.recv_into(buf, BUFFER_SIZE)
+        print "Received: " + buf.encode("hex")
+        if(recved > 16):
             (dataType, network, subnet, pathVector) = MyPacket.decode(data)
             if dataType == KEY_TYPE_REQUEST:
                 if determineLoop(pathVector):
