@@ -91,9 +91,9 @@ def server_bgp(threadName, conn, addr):
         if(recved > 15):
             (dataType, network, subnet, pathVector) = MyPacket.decode(buf)
             if dataType == KEY_TYPE_REQUEST:
-                neighbor = findNeighborByIp(str(addr))
+                neighbor = findNeighborByIp(addr[0])
                 if neighbor is None:
-                    neighbors.append({"ip" : str(addr), "age": AGE_LIFE, "socket": conn})
+                    neighbors.append({"ip" : addr[0], "age": AGE_LIFE, "socket": conn})
                 else:
                     neighbor.update({"age" : AGE_LIFE})
                 if determineLoop(pathVector):
@@ -125,7 +125,7 @@ def server_bgp(threadName, conn, addr):
                 #Now we need to add this AS first line and send it to other neighbors
                 pathVector.insert(0, autoSys)
                 for neighbor in neighbors:
-                    if(neighbor["ip"] == str(addr)):
+                    if(neighbor["ip"] == addr[0]):
                         continue
                     s = neighbor["socket"]
                     pkt = MyPacket.encode(KEY_TYPE_REQUEST, network, subnet, pathVector)
