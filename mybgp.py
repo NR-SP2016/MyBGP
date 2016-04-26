@@ -82,9 +82,11 @@ def HexToByte( hexStr ):
 # Actual BGP server module. Handles TCP receiving data
 def server_bgp(threadName, conn, addr):
     while True:
-        buf = bytearray(BUFFER_SIZE)
-        recved = conn.recv_into(buf, BUFFER_SIZE)
-        d("Received: %s" % ByteToHex(buf))
+        #buf = bytearray(BUFFER_SIZE)
+        #recved = conn.recv_into(buf, BUFFER_SIZE)
+        buf = conn.recv(BUFFER_SIZE)
+        #d("Received: %s" % ByteToHex(buf))
+        recved = len(buf)
         if(recved > 15):
             (dataType, network, subnet, pathVector) = MyPacket.decode(buf)
             if dataType == KEY_TYPE_REQUEST:

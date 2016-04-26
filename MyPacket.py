@@ -31,7 +31,7 @@ def encode(dataType, netString, subnString, pathList):
 def decode(rawData):
     if(len(rawData) < 16):
         return (-1, -1, -1, -1)
-    dataType = struct.unpack("B", rawData[0])
+    dataType = struct.unpack("B", rawData[0])[0]
     netString = decodeAddr(struct.unpack("BBBB", rawData[4:8]))
     subString = decodeAddr(struct.unpack("BBBB", rawData[8:12]))
     pathList = []
