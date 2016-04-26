@@ -24,6 +24,11 @@ routingTable = []		# Routing Table!! You might want to save all ip address and A
 
 KEY_TYPE_REQUEST = 1
 BUFFER_SIZE = 1024
+DEBUG = True
+
+def d(msg):
+    if(DEBUG):
+        print(msg)
 
 """
 HexByteConversion
@@ -79,12 +84,12 @@ def server_bgp(threadName, conn, addr):
     while True:
         buf = bytearray(BUFFER_SIZE)
         recved = conn.recv_into(buf, BUFFER_SIZE)
-        print "Received: %d" % recved
+        d("Received: %s" % ByteToHex(buf))
         if(recved > 15):
-            (dataType, network, subnet, pathVector) = MyPacket.decode(data)
+            (dataType, network, subnet, pathVector) = MyPacket.decode(buf)
             if dataType == KEY_TYPE_REQUEST:
                 if determineLoop(pathVector):
-                    print "Loop detected. Ignoring..."
+                    d("Loop detected. Ignoring...")
                     continue
                 print "Received: net:%s sub:%s path:%s" %(network, subnet, pathVector)
         if(recved == 0):
@@ -110,12 +115,12 @@ def server_listen(threadName):
 # BGP client module. It connects to the neighbor's IP.
 def client_bgp(threadName, neighbor):
     cs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print "Connecting to %s..." % neighbor
+    d("Connecting to %s..." % neighbor)
     cs.connect((neighbor, PORT_NUM))
-    print "Connected to : %s" % neighbor
+    d("Connected to : %s" % neighbor)
     while(True):
         pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
-        print "sending:" + pkt
+        d("sending:" + ByteToHex(pkt))
         cs.send(pkt)
         time.sleep(INTERVAL)
     cs.close()
