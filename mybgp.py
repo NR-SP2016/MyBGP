@@ -59,7 +59,7 @@ def client_bgp(threadName, neighbor):
     print "Connecting to %s..." % neighbor
     cs.connect((neighbor, PORT_NUM))
     while(True):
-        cs.send(MyPacket.encode(thisNet, thisSub, [autoSys]))
+        cs.send(MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys]))
         time.sleep(INTERVAL)
     cs.close()
 
