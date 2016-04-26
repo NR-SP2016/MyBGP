@@ -80,13 +80,15 @@ def server_bgp(threadName, conn, addr):
         buf = bytearray(BUFFER_SIZE)
         recved = conn.recv_into(buf, BUFFER_SIZE)
         print "Received: %d" % recved
-        if(recved > 16):
+        if(recved > 15):
             (dataType, network, subnet, pathVector) = MyPacket.decode(data)
             if dataType == KEY_TYPE_REQUEST:
                 if determineLoop(pathVector):
                     print "Loop detected. Ignoring..."
                     continue
                 print "Received: net:%s sub:%s path:%s" %(network, subnet, pathVector)
+        if(recved == 0):
+            break
     conn.close()
 
 # TCP Listening module. When connecting, it makes another thread and pass the connection to server_bgp() function
@@ -110,6 +112,7 @@ def client_bgp(threadName, neighbor):
     cs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print "Connecting to %s..." % neighbor
     cs.connect((neighbor, PORT_NUM))
+    print "Connected to : %s" % neighbor
     while(True):
         pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
         print "sending:" + pkt
