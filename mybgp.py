@@ -93,7 +93,7 @@ def server_bgp(threadName, conn, addr):
             if dataType == KEY_TYPE_REQUEST:
                 neighbor = findNeighborByIp(str(addr))
                 if neighbor is None:
-                    neighbors.append({"ip" : network, "age": AGE_LIFE, "socket": conn})
+                    neighbors.append({"ip" : str(addr), "age": AGE_LIFE, "socket": conn})
                 else:
                     neighbor.update({"age" : AGE_LIFE})
                 if determineLoop(pathVector):
@@ -176,7 +176,7 @@ def findNeighborByIp(ipAddress):
 def displayRoutingTable():
     print "network\t\tsubnet\t\tAS\tneighbor\tforwardTo"
     for route in routingTable:
-        print "%s\t%s\t%s\t%s\t%s" % (route["network"], route["subnet"], route["AS"], route["neighbor"], route["forward"])
+        print "%s\t%s\t%s\t%s\t\t%s" % (route["network"], route["subnet"], route["AS"], route["neighbor"], route["forward"])
 
 def aging_thread(threadName):
     while True:
