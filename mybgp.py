@@ -79,7 +79,7 @@ def server_bgp(threadName, conn, addr):
     while True:
         buf = bytearray(BUFFER_SIZE)
         recved = conn.recv_into(buf, BUFFER_SIZE)
-        print "Received: " + recved
+        print "Received: %d" % recved
         if(recved > 16):
             (dataType, network, subnet, pathVector) = MyPacket.decode(data)
             if dataType == KEY_TYPE_REQUEST:
