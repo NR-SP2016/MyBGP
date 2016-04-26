@@ -28,6 +28,7 @@ KEY_TYPE_REQUEST = 1
 def server_bgp(threadName, conn, addr):
     while True:
         data = conn.recv(1024)
+        print "Received: " + data.encode("hex")
         if(len(data) > 13):
             (dataType, network, subnet, pathVector) = MyPacket.decode(data)
             if dataType == KEY_TYPE_REQUEST:
@@ -59,7 +60,9 @@ def client_bgp(threadName, neighbor):
     print "Connecting to %s..." % neighbor
     cs.connect((neighbor, PORT_NUM))
     while(True):
-        cs.send(MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys]))
+        pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
+        print "sending:" + pkt
+        cs.send()
         time.sleep(INTERVAL)
     cs.close()
 
