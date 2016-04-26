@@ -113,7 +113,7 @@ def client_bgp(threadName, neighbor):
     while(True):
         pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
         print "sending:" + pkt
-        cs.send()
+        cs.send(pkt)
         time.sleep(INTERVAL)
     cs.close()
 
