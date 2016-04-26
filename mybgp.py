@@ -21,7 +21,8 @@ routingTable = []		# Routing Table!! You might want to save all ip address and A
 
 autoSys = sys.argv[1]
 thisNet = sys.argv[2]
-neighbors = sys.argv[3:]
+thisSub = sys.argv[3]
+neighbors = sys.argv[4:]
 
 
 
@@ -63,15 +64,15 @@ def client_bgp(threadName, neighbor):
 
 # For the testing for now. It sends its AS number and its network(not real IP. for simulation)
 def makePacketTest():
-    return "REQ|AS%s|%s" % (autoSys, thisNet)
+    return "REQ|%s|%s|%s" % (thisNet, thisSub, autoSys)
 
 def usage():
-    print "%s <ASNumber> <Network> <LinkIP1> <LinkIP2> ..." %(sys.argv[0])
-    print "Example: %s 60001 192.168.10.0/24 10.0.0.1 10.0.1.2 ..." %(sys.argv[0])
+    print "%s <ASNumber> <Network> <Subnet> <LinkIP1> <LinkIP2> ..." %(sys.argv[0])
+    print "Example: %s 60001 192.168.10.0 255.255.255.0 10.0.0.1 10.0.1.2 ..." %(sys.argv[0])
 
 # Below is the main function!
 
-if(len(sys.argv) <3):
+if(len(sys.argv) <4):
     usage()
     exit(1)
 
