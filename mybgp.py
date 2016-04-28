@@ -272,7 +272,7 @@ for neighbor in links:
     neighbors.append({"ip": neighbor, "age": AGE_LIFE, "linkCost": int(random.random()*100%10)})
 
 # Append routing table for myself
-routingRow = {"network":thisNet, "subnet":thisSub, "AS":"ItsME", "neighbor": autoSys, "linkCost":0 , "forward": "ItsME"}
+routingRow = {"network":thisNet, "subnet":thisSub, "AS":autoSys, "neighbor": "ItsME", "linkCost":0 , "forward": "ItsME"}
 routingTable.append(routingRow)
 # Starting Server Listening Thread
 
