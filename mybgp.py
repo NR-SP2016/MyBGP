@@ -167,7 +167,7 @@ def server_listen(threadName):
 
 # BGP client module. It connects to the neighbor's IP.
 def client_bgp(threadName, neighbor):
-    While True:
+    while True:
         cs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         d("Connecting to %s..." % neighbor["ip"])
         try:
