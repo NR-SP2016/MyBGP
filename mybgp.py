@@ -260,11 +260,12 @@ links = parseLinks(sys.argv[4:])
 flooding = True
 excluding = []
 
-if policy[0] == "NoFlooding":
-    flooding = False
-elif policy[0] == "Exclude":
-    for exclude in policy[1:]:
-        excluding.append(exclude)
+if len(policy) >0):
+    if policy[0] == "NoFlooding":
+        flooding = False
+    elif policy[0] == "Exclude":
+        for exclude in policy[1:]:
+            excluding.append(exclude)
 
 # Registering neighbor links with random costs
 for neighbor in links:
