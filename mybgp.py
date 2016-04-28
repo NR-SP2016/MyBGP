@@ -260,7 +260,7 @@ links = parseLinks(sys.argv[4:])
 flooding = True
 excluding = []
 
-if len(policy) >0):
+if (len(policy) >0):
     if policy[0] == "NoFlooding":
         flooding = False
     elif policy[0] == "Exclude":
