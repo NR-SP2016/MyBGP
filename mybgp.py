@@ -194,7 +194,7 @@ def findNeighborByIp(ipAddress):
 
 def displayRoutingTable():
     print "network\t\tsubnet\t\tAS\tneighbor\tforwardTo"
-    for route in routingTable:
+    for route in sorted(routingTable, key=lambda k:k["network"]):
         print "%s\t%s\t%s\t%s\t\t%s" % (route["network"], route["subnet"], route["AS"], route["neighbor"], route["forward"])
 
 def aging_thread(threadName):
@@ -224,19 +224,21 @@ def parsePolicy(options):
         elif(options[i][0] == "-"):
             parsing = False
         else:
-            policy.append(options[i])
+            if(parsing):
+                policy.append(options[i])
     return policy
 
 def parseLinks(options):
     links = []
     parsing = False
     for i in range(0, len(options)):
-        if(options[i] == "-p"):
+        if(options[i] == "-l"):
             parsing = True
         elif(options[i][0] == "-"):
             parsing = False
         else:
-            links.append(options[i])
+            if(parsing):
+                links.append(options[i])
     return links
 
 def usage():
