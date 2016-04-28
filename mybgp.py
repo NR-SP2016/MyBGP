@@ -231,9 +231,9 @@ def parseLinks(options):
     links = []
     parsing = False
     for i in range(0, len(options)):
-        if(options(i) == "-p"):
+        if(options[i] == "-p"):
             parsing = True
-        elif(options(i)[0] == "-"):
+        elif(options[i][0] == "-"):
             parsing = False
         else:
             links.append(options[i])
