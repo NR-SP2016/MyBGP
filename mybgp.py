@@ -4,6 +4,7 @@ import socket               # Import socket module
 import thread
 import time
 import MyPacket
+import random
 
 #Global constants
 
@@ -94,8 +95,8 @@ def server_bgp(threadName, conn, addr):
         recved = 0
         if(buf is not None):
             recved = len(buf)
-        if(recved > 15):
-            (dataType, network, subnet, pathVector) = MyPacket.decode(buf)
+        if(recved > 19):
+            (dataType, network, subnet, linkCost, pathVector) = MyPacket.decode(buf)
             if dataType == KEY_TYPE_REQUEST:
                 neighbor = findNeighborByIp(addr[0])
                 if neighbor is None:
@@ -113,15 +114,19 @@ def server_bgp(threadName, conn, addr):
                     forward = "Direct"
                 else:
                     forward = "Routed"
-                routingRow = {"network":network, "subnet":subnet, "AS":pathVector[-1], "neighbor": pathVector[0], "forward": forward}
+                routingRow = {"network":network, "subnet":subnet, "AS":pathVector[-1], "neighbor": pathVector[0], "linkCost": linkCost, "forward": forward}
                 if(len(routingTable) == 0):
                     routingTable.append(routingRow)
                 else:
                     newcomer = True
                     for route in routingTable:
                         if(route["network"] == network):
-                            route.update(routingRow)
                             newcomer = False
+                            #Updates the route only if the cost is smaller to make Shortest path!
+                            if(route["linkCost"] > linkCost):
+                                route["linkCost"] = linkCost
+                                route.update(routingRow)
+                                d("Link cost is updated with smaller one")
                     if(newcomer):
                         routingTable.append(routingRow)
 
@@ -129,14 +134,17 @@ def server_bgp(threadName, conn, addr):
                 displayRoutingTable()
 
                 #Now we need to add this AS first line and send it to other neighbors
-                pathVector.insert(0, autoSys)
-                for neighbor in neighbors:
-                    if(neighbor["ip"] == addr[0]):
-                        continue
-                    if "socket" in neighbor:
-                        s = neighbor["socket"]
-                        pkt = MyPacket.encode(KEY_TYPE_REQUEST, network, subnet, pathVector)
-                        s.send(pkt)
+                #Only floods to the other neighbors if it is set flooding or
+                #the network is not in excluding list!!
+                if(flooding || network not in excluding):
+                    pathVector.insert(0, autoSys)
+                    for neighbor in neighbors:
+                        if(neighbor["ip"] == addr[0]):
+                            continue
+                        else if "socket" in neighbor:
+                            s = neighbor["socket"]
+                            pkt = MyPacket.encode(KEY_TYPE_REQUEST, network, subnet, pathVector)
+                            s.send(pkt)
         if(recved == 0):
             break
     conn.close()
@@ -159,20 +167,21 @@ def server_listen(threadName):
 
 # BGP client module. It connects to the neighbor's IP.
 def client_bgp(threadName, neighbor):
-    cs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    d("Connecting to %s..." % neighbor["ip"])
-    try:
-        cs.connect((neighbor["ip"], PORT_NUM))
-        d("Connected to : %s" % neighbor["ip"])
-        neighbor.update({"socket": cs})
-        while(True):
-            pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
-            #d("sending:" + ByteToHex(pkt))
-            cs.send(pkt)
-            time.sleep(INTERVAL)
-    except socket.error, e:
-        print "Socket Error: %s" % str(e)
-    cs.close()
+    While True:
+        cs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        d("Connecting to %s..." % neighbor["ip"])
+        try:
+            cs.connect((neighbor["ip"], PORT_NUM))
+            d("Connected to : %s" % neighbor["ip"])
+            neighbor.update({"socket": cs})
+            while(True):
+                pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
+                #d("sending:" + ByteToHex(pkt))
+                cs.send(pkt)
+                time.sleep(INTERVAL)
+        except socket.error, e:
+            print "Socket Error: %s" % str(e)
+        cs.close()
 
 def determineLoop(pathVector):
     return autoSys in pathVector
@@ -206,12 +215,37 @@ def aging():
 def makePacketTest():
     return "REQ|%s|%s|%s" % (thisNet, thisSub, autoSys)
 
+def parsePolicy(options):
+    policy = []
+    parsing = False
+    for i in range(0, len(options)):
+        if(options(i) == "-p"):
+            parsing = True
+        else if(options(i)[0] == "-"):
+            parsing = False
+        else:
+            policy.append(options[i])
+    return policy
+
+def parseLinks(options):
+    links = []
+    parsing = False
+    for i in range(0, len(options)):
+        if(options(i) == "-p"):
+            parsing = True
+        else if(options(i)[0] == "-"):
+            parsing = False
+        else:
+            links.append(options[i])
+    return links
+
 def usage():
-    print "%s <ASNumber> <Network> <Subnet> <LinkIP1> <LinkIP2> ..." %(sys.argv[0])
-    print "Example: %s 60001 192.168.10.0 255.255.255.0 10.0.0.1 10.0.1.2 ..." %(sys.argv[0])
+    print "%s <ASNumber> <Network> <Subnet> -p <NoFlooding/Exclude> <Network to be excluded> -l <LinkIP1> <LinkIP2> ..." %(sys.argv[0])
+    print "Example1: %s 60001 192.168.10.0 255.255.255.0 -l 10.0.0.1 10.0.1.2 ..." %(sys.argv[0])
+    print "Example2: %s 60001 192.168.10.0 255.255.255.0 -p Exclude 192.168.40.0 -l 10.0.0.1 10.0.1.2 ..." %(sys.argv[0])
 
 # Below is the main function!
-if(len(sys.argv) <4):
+if(len(sys.argv) <5):
     usage()
     exit(1)
 
@@ -219,11 +253,23 @@ autoSys = int(sys.argv[1])
 thisNet = sys.argv[2]
 thisSub = sys.argv[3]
 
-for neighbor in sys.argv[4:]:
-    neighbors.append({"ip": neighbor, "age": AGE_LIFE})
+policy = parsePolicy(sys.argv[4:])
+links = parseLinks(sys.argv[4:])
+flooding = True
+excluding = []
+
+if policy[0] == "NoFlooding":
+    flooding = False
+else if policy[0] == "Exclude":
+    for exclude in policy[1:]:
+        excluding.append(exclude)
+
+# Registering neighbor links with random costs
+for neighbor in links:
+    neighbors.append({"ip": neighbor, "age": AGE_LIFE, "cost": int(random.random()*100%10)})
 
 # Append routing table for myself
-routingRow = {"network":thisNet, "subnet":thisSub, "AS":autoSys, "neighbor": autoSys, "forward": "Direct"}
+routingRow = {"network":thisNet, "subnet":thisSub, "AS":autoSys, "neighbor": autoSys, "linkCost":0 , "forward": "Direct"}
 routingTable.append(routingRow)
 # Starting Server Listening Thread
 
