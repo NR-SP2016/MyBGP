@@ -143,7 +143,7 @@ def server_bgp(threadName, conn, addr):
                             continue
                         elif "socket" in neighbor:
                             s = neighbor["socket"]
-                            pkt = MyPacket.encode(KEY_TYPE_REQUEST, network, subnet, pathVector)
+                            pkt = MyPacket.encode(KEY_TYPE_REQUEST, network, subnet, pathVector, linkCost)
                             s.send(pkt)
         if(recved == 0):
             break
@@ -175,7 +175,7 @@ def client_bgp(threadName, neighbor):
             d("Connected to : %s" % neighbor["ip"])
             neighbor.update({"socket": cs})
             while(True):
-                pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys])
+                pkt = MyPacket.encode(KEY_TYPE_REQUEST, thisNet, thisSub, [autoSys], neighbor["linkCost"])
                 #d("sending:" + ByteToHex(pkt))
                 cs.send(pkt)
                 time.sleep(INTERVAL)
@@ -266,7 +266,7 @@ elif policy[0] == "Exclude":
 
 # Registering neighbor links with random costs
 for neighbor in links:
-    neighbors.append({"ip": neighbor, "age": AGE_LIFE, "cost": int(random.random()*100%10)})
+    neighbors.append({"ip": neighbor, "age": AGE_LIFE, "linkCost": int(random.random()*100%10)})
 
 # Append routing table for myself
 routingRow = {"network":thisNet, "subnet":thisSub, "AS":autoSys, "neighbor": autoSys, "linkCost":0 , "forward": "Direct"}
