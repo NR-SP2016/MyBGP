@@ -136,7 +136,7 @@ def server_bgp(threadName, conn, addr):
                 #Now we need to add this AS first line and send it to other neighbors
                 #Only floods to the other neighbors if it is set flooding or
                 #the network is not in excluding list!!
-                if(flooding || network not in excluding):
+                if(flooding or network not in excluding):
                     pathVector.insert(0, autoSys)
                     for neighbor in neighbors:
                         if(neighbor["ip"] == addr[0]):
