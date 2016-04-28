@@ -221,7 +221,7 @@ def parsePolicy(options):
     for i in range(0, len(options)):
         if(options(i) == "-p"):
             parsing = True
-        else if(options(i)[0] == "-"):
+        elif(options(i)[0] == "-"):
             parsing = False
         else:
             policy.append(options[i])
@@ -260,7 +260,7 @@ excluding = []
 
 if policy[0] == "NoFlooding":
     flooding = False
-else if policy[0] == "Exclude":
+elif policy[0] == "Exclude":
     for exclude in policy[1:]:
         excluding.append(exclude)
 
