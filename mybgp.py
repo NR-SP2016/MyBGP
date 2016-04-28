@@ -141,7 +141,7 @@ def server_bgp(threadName, conn, addr):
                     for neighbor in neighbors:
                         if(neighbor["ip"] == addr[0]):
                             continue
-                        else if "socket" in neighbor:
+                        elif "socket" in neighbor:
                             s = neighbor["socket"]
                             pkt = MyPacket.encode(KEY_TYPE_REQUEST, network, subnet, pathVector)
                             s.send(pkt)
@@ -233,7 +233,7 @@ def parseLinks(options):
     for i in range(0, len(options)):
         if(options(i) == "-p"):
             parsing = True
-        else if(options(i)[0] == "-"):
+        elif(options(i)[0] == "-"):
             parsing = False
         else:
             links.append(options[i])
