@@ -136,7 +136,7 @@ def server_bgp(threadName, conn, addr):
                 #Now we need to add this AS first line and send it to other neighbors
                 #Only floods to the other neighbors if it is set flooding or
                 #the network is not in excluding list!!
-                if(flooding or network not in excluding):
+                if(flooding and network not in excluding):
                     pathVector.insert(0, autoSys)
                     for neighbor in neighbors:
                         if(neighbor["ip"] == addr[0]):
@@ -272,7 +272,7 @@ for neighbor in links:
     neighbors.append({"ip": neighbor, "age": AGE_LIFE, "linkCost": int(random.random()*100%10)})
 
 # Append routing table for myself
-routingRow = {"network":thisNet, "subnet":thisSub, "AS":autoSys, "neighbor": autoSys, "linkCost":0 , "forward": "Direct"}
+routingRow = {"network":thisNet, "subnet":thisSub, "AS":"ItsME", "neighbor": autoSys, "linkCost":0 , "forward": "ItsME"}
 routingTable.append(routingRow)
 # Starting Server Listening Thread
 
